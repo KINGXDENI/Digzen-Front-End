@@ -27,5 +27,8 @@ jobs:
     - name: Merge Upstream Changes into Main
       run: git merge --allow-unrelated-histories upstream/main
 
+    - name: Pull Changes from Remote
+      run: git pull origin main
+
     - name: Push Changes to Fork
       run: git push origin main
