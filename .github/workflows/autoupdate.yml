@@ -1,9 +1,9 @@
-name: Update Main Branch
+name: Auto Update Main Branch
 
 on:
   push:
     branches:
-      - main  # Ganti 'main' dengan nama branch utama Anda jika berbeda
+      - main
 
 jobs:
   update-main:
@@ -13,18 +13,14 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Set up Git
-      run: |
-        git config user.name "${{ github.actor }}"
-        git config user.email "${{ github.actor }}@users.noreply.github.com"
+    - name: Set Upstream Remote
+      run: git remote add upstream https://github.com/Project-Digital-Citizen/Front-End
 
-    - name: Fetch Upstream
-      run: |
-        git remote add upstream https://github.com/Project-Digital-Citizen/Front-End.git
-        git fetch upstream
+    - name: Fetch Upstream Changes
+      run: git fetch upstream main
 
-    - name: Update Main Branch
-      run: |
-        git checkout main
-        git merge upstream/main
-        git push origin main
+    - name: Merge Upstream Changes into Main
+      run: git merge upstream/main
+
+    - name: Push Changes to Fork
+      run: git push origin main
