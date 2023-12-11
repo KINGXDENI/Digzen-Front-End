@@ -1,43 +1,30 @@
-name: Auto-update main branch
+name: Update Main Branch
 
 on:
   push:
     branches:
-      - main
+      - main  # Ganti 'main' dengan nama branch utama Anda jika berbeda
 
 jobs:
-  update-main-branch:
+  update-main:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout Repository
       uses: actions/checkout@v2
 
     - name: Set up Git
       run: |
-        git config --global user.name "${{ github.actor }}"
-        git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
 
-    - name: Fetch upstream changes
+    - name: Fetch Upstream
       run: |
         git remote add upstream https://github.com/Project-Digital-Citizen/Front-End.git
         git fetch upstream
 
-    - name: Merge changes into main
+    - name: Update Main Branch
       run: |
         git checkout main
-        git merge --allow-unrelated-histories upstream/main || echo "Merge conflict"
-
-    - name: Resolve merge conflicts
-      run: |
-        git checkout --ours src/App.jsx src/pages/Admin/VerifikasiDomisili.jsx src/pages/Admin/VerifikasiKTP.jsx src/pages/FormDomisili.jsx src/pages/FormKTP.jsx src/pages/Login.jsx
-        git add src/App.jsx src/pages/Admin/VerifikasiDomisili.jsx src/pages/Admin/VerifikasiKTP.jsx src/pages/FormDomisili.jsx src/pages/FormKTP.jsx src/pages/Login.jsx
-        git merge --continue
-
-    - name: Push changes
-      run: |
-        git push origin main
-
-    - name: Push changes
-      run: |
+        git merge upstream/main
         git push origin main
