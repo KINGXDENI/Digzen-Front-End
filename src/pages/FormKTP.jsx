@@ -9,39 +9,123 @@ import {
   Select,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Cookies } from "react-cookie";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { ktpAPI } from "../data/api-digzen";
+import CustomError from "../util/customError";
 
 const FormKTP = () => {
+  const cookies = new Cookies();
+
+  useEffect(() => {
+    if (!cookies.get("userData")) {
+      navigate("/login");
+    }
+  });
+
   const navigate = useNavigate();
+  const [data, setForm] = useState({});
+  const [TTL, setTTL] = useState({});
+  const [isDisabled, setIsDisabled] = useState(false);
 
-  // state label
-  const [label, setLabel] = useState("");
+  const handleTTL = (e, name) => {
+    const formTTL = { ...TTL };
+    formTTL[name] = e.target.value;
+    setTTL(formTTL);
 
-  const handleChange = (event) => {
-    setLabel(event.target.value);
+    const { tempat, tanggal, bulan, tahun } = TTL;
+
+    if (tempat && tanggal && bulan && tahun) {
+      const formDataCopy = {
+        tempatTanggalLahir: `${tempat}, ${tanggal}-${bulan}-${tahun}`,
+        ...data,
+      };
+      console.log(formDataCopy);
+      setForm(formDataCopy);
+    }
   };
 
-  const tanggal = [];
+  const handleFormValue = (e, name) => {
+    const formDataCopy = { ...data };
+    formDataCopy[name] = e.target.value;
+    if (
+      name == "suratRTImage" ||
+      name == "suratRWImage" ||
+      name == "kkImage" ||
+      name == "selfieImage"
+    ) {
+      formDataCopy[name] = e.target.files[0];
+    }
+
+    setForm(formDataCopy);
+  };
+
+  const handleRegClick = async (e) => {
+    e.preventDefault();
+    setIsDisabled(true);
+    try {
+      if (data) {
+        const formData = new FormData();
+        for (let key in data) {
+          formData.append(key, data[key]);
+        }
+        const response = await ktpAPI.post(
+          `/${cookies.get("userLog").userId}`,
+          formData
+        );
+        console.log(response);
+        if (response.status == 201) {
+          Swal.fire({
+            title: "Sukses",
+            icon: "success",
+            text: response.data.message,
+            showConfirmButton: false,
+            timer: 1000,
+          }).then(() => {
+            navigate("/statuspengajuan");
+          });
+        }
+      } else {
+        throw new CustomError(
+          "validationError",
+          "Form tidak lengkap mohon lengkapi form terlebih dahulu"
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      if (err.name == "validationError") {
+        toast.error(err.message);
+      } else {
+        toast.error(err?.response?.data?.message);
+      }
+    } finally {
+      setIsDisabled(false);
+    }
+  };
+
+  const tanggalSelect = [];
   for (let i = 1; i <= 31; i++) {
-    tanggal.push(
+    tanggalSelect.push(
       <MenuItem key={i} value={i}>
         {i}
       </MenuItem>
     );
   }
 
-  const bulan = [];
+  const bulanSelect = [];
   for (let i = 1; i <= 12; i++) {
-    bulan.push(
+    bulanSelect.push(
       <MenuItem key={i} value={i}>
         {i}
       </MenuItem>
     );
   }
 
-  const tahun = [];
+  const tahunSelect = [];
   for (let i = 1950; i <= 2024; i++) {
-    tahun.push(
+    tahunSelect.push(
       <MenuItem key={i} value={i}>
         {i}
       </MenuItem>
@@ -101,7 +185,7 @@ const FormKTP = () => {
           <div className="relative z-10 w-11/12 mx-auto bg-white shadow-2xl rounded-xl ">
             <h1 className="p-4 px-10 pt-6 text-2xl font-black text-indigo">
               {" "}
-              Form Pengajuan KTP
+              Form Pengajuan
             </h1>
             <hr className="bg-indigo text-black p-[1px] mx-10 " />
             <div className="px-10">
@@ -109,13 +193,12 @@ const FormKTP = () => {
               <form action="">
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
                   <TextField
-                    id="outlined-basic"
+                    id="outlined-number"
                     label="NIK"
                     type="number"
                     placeholder="xxxxxxxxxx"
-                    variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "NIK")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -125,7 +208,7 @@ const FormKTP = () => {
                     placeholder="Nama Lengkap"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "nama")}
                   />
                 </div>
                 {/* ttl mobile */}
@@ -133,10 +216,10 @@ const FormKTP = () => {
                   <TextField
                     id="outlined-basic"
                     label="Tempat, Tanggal Lahir"
-                    placeholder="Tempat, Tgl-Bln-Thn (10-02-2002)"
+                    placeholder="Tempat, Tgl-Bln-Thn (Jakarta, 10-02-2002)"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "tempatTanggalLahir")}
                   />
                 </div>
                 {/* ttl large */}
@@ -147,7 +230,7 @@ const FormKTP = () => {
                     placeholder="Tempat"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onChange={(e) => handleTTL(e, "tempat")}
                   />
                   <FormControl fullWidth>
                     <InputLabel id="demo-simple-select-label">
@@ -156,11 +239,10 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Tanggal"
-                      onChange={handleChange}
+                      onChange={(e) => handleTTL(e, "tanggal")}
                     >
-                      {tanggal}
+                      {tanggalSelect}
                     </Select>
                   </FormControl>
                   <FormControl fullWidth>
@@ -168,11 +250,10 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Bulan"
-                      onChange={handleChange}
+                      onChange={(e) => handleTTL(e, "bulan")}
                     >
-                      {bulan}
+                      {bulanSelect}
                     </Select>
                   </FormControl>
                   <FormControl fullWidth>
@@ -180,11 +261,10 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Tahun"
-                      onChange={handleChange}
+                      onChange={(e) => handleTTL(e, "tahun")}
                     >
-                      {tahun}
+                      {tahunSelect}
                     </Select>
                   </FormControl>
                 </div>
@@ -196,9 +276,8 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Jenis Kelamin"
-                      onChange={handleChange}
+                      onChange={(e) => handleFormValue(e, "jenisKelamin")}
                     >
                       <MenuItem value={"Laki-Laki"}>Laki-Laki</MenuItem>
                       <MenuItem value={"Perempuan"}>Perempuan</MenuItem>
@@ -212,7 +291,7 @@ const FormKTP = () => {
                     placeholder=""
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "alamat")}
                   />
                 </div>
                 <div className="flex flex-col justify-between w-full gap-2 pt-4 form-control md:flex md:flex-row">
@@ -222,7 +301,7 @@ const FormKTP = () => {
                     placeholder="xx/xx"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "rtRw")}
                   />
                   <TextField
                     id="outlined-basic"
@@ -230,7 +309,7 @@ const FormKTP = () => {
                     placeholder="Kelurahan/Desa"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "kelurahanDesa")}
                   />
                   <TextField
                     id="outlined-basic"
@@ -238,7 +317,7 @@ const FormKTP = () => {
                     placeholder="Kecamatan"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "kecamatan")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -248,7 +327,7 @@ const FormKTP = () => {
                     placeholder="Agama"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "agama")}
                   />
                 </div>
                 <div className="flex flex-row justify-between w-full gap-2 pt-4 form-control">
@@ -259,9 +338,8 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Status Perkawinan"
-                      onChange={handleChange}
+                      onBlur={(e) => handleFormValue(e, "status")}
                     >
                       <MenuItem value={"Belum Menikah"}>Belum Menikah</MenuItem>
                       <MenuItem value={"Sudah Menikah"}>Sudah Menikah</MenuItem>
@@ -275,7 +353,7 @@ const FormKTP = () => {
                     placeholder="Pekerjaan"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "pekerjaan")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -285,10 +363,10 @@ const FormKTP = () => {
                     placeholder="Kewarganegaraan"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "nama")}
+                    onBlur={(e) => handleFormValue(e, "kewarganegaraan")}
                   />
                 </div>
-                <div className="flex flex-row justify-between w-full gap-2 pt-4 form-control">
+                <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
                   <FormControl fullWidth>
                     <InputLabel id="demo-simple-select-label">
                       Golongan Darah
@@ -296,9 +374,8 @@ const FormKTP = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Golongan Darah"
-                      onChange={handleChange}
+                      onChange={(e) => handleFormValue(e, "golonganDarah")}
                     >
                       <MenuItem value={"A"}>A</MenuItem>
                       <MenuItem value={"B"}>B</MenuItem>
@@ -307,6 +384,7 @@ const FormKTP = () => {
                     </Select>
                   </FormControl>
                 </div>
+
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
                   <label className="label">
                     <span className="font-black label-text">
@@ -315,6 +393,7 @@ const FormKTP = () => {
                   </label>
                   <input
                     type="file"
+                    onChange={(e) => handleFormValue(e, "suratRTImage")}
                     placeholder="PDF Pengantar RT"
                     className="w-full rounded-[5px] file-input file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
@@ -328,6 +407,7 @@ const FormKTP = () => {
                   <input
                     type="file"
                     placeholder="PDF Pengantar RW"
+                    onChange={(e) => handleFormValue(e, "suratRWImage")}
                     className="w-full file-input rounded-[5px] file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
                 </div>
@@ -339,6 +419,7 @@ const FormKTP = () => {
                   </label>
                   <input
                     type="file"
+                    onChange={(e) => handleFormValue(e, "kkImage")}
                     placeholder="PDF Kartu Keluarga"
                     className="w-full rounded-[5px] file-input file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
@@ -349,12 +430,17 @@ const FormKTP = () => {
                   </label>
                   <input
                     type="file"
+                    onChange={(e) => handleFormValue(e, "selfieImage")}
                     placeholder="PNG"
                     className="w-full rounded-[5px] file-input file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
                 </div>
                 <div className="flex-row-reverse pt-4 pb-6 md:flex">
-                  <button className="text-white btn btn-block bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo md:w-1/6">
+                  <button
+                    disabled={isDisabled}
+                    onClick={handleRegClick}
+                    className="text-white btn btn-block bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo md:w-1/6"
+                  >
                     Submit
                   </button>
                 </div>
