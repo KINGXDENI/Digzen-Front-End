@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import NavbarADM from "../../components/NavbarADM";
 import Footer from "../../components/Footer";
 import { useEffect, useState } from "react";
@@ -8,13 +7,17 @@ import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import { TextField } from "@mui/material";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import Swal from "sweetalert2";
+import { Cookies } from "react-cookie";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const style = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: window.innerWidth <= 390 ? 300 : 500,
   bgcolor: "background.paper",
   border: "2px solid #000",
   boxShadow: 24,
@@ -22,6 +25,7 @@ const style = {
 };
 
 const RenderList = (props) => {
+  const cookies = new Cookies();
   const [open2, setOpen2] = useState(false);
   const [open, setOpen] = useState(false);
   const handleOpen2 = () => setOpen2(true);
@@ -29,6 +33,9 @@ const RenderList = (props) => {
   const handleClose2 = () => setOpen2(false);
   const handleClose = () => setOpen(false);
   const [valueEdit, setValue] = useState({});
+  const [userDetail, setDetail] = useState({});
+  const [current, setCurrent] = useState({});
+  const [isDisabled, setIsDisabled] = useState(false);
 
   const handleFormValue = (value, name) => {
     const formDataCopy = { ...valueEdit };
@@ -43,7 +50,97 @@ const RenderList = (props) => {
     );
   };
 
-  const navigate = useNavigate();
+  const handleInfoClick = async (id) => {
+    handleClose();
+    try {
+      const response = await userAPI.get(`/${id}`);
+      setCurrent({ id });
+      setDetail(response.data.user);
+      handleOpen();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleEditSubmit = async (id) => {
+    setIsDisabled(true);
+    try {
+      const response = await userAPI.put(`/${id}`, JSON.stringify(valueEdit));
+
+      if (response.status == 200) {
+        const responseDetail = await userAPI.get(
+          `/${cookies.get("userLog").userId}`
+        );
+
+        cookies.set("userData", responseDetail.data, {
+          expires: new Date(Date.now() + cookies.get("userLog").exp),
+        });
+        Swal.fire({
+          title: "Sukses",
+          icon: "success",
+          showConfirmButton: false,
+          timer: 1000,
+        }).then(() => {
+          handleClose2();
+          handleInfoClick(id);
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      if (err.name == "Error") {
+        toast.error(err.message);
+      } else {
+        toast.error(err?.response?.data?.message);
+      }
+    } finally {
+      setIsDisabled(false);
+    }
+  };
+
+  const handleDeleteClick = (id) => {
+    if (id === cookies.get("userLog").userId) {
+      Swal.fire({
+        title: "You can't delete yourself",
+        icon: "error",
+      });
+    } else {
+      Swal.fire({
+        title: "Are you sure?",
+        icon: "warning",
+        text: "Account deletion is irreversible",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            setIsDisabled(true);
+            const response = await userAPI.delete(`/${id}`);
+            if (response.data.status === "success") {
+              Swal.fire({
+                title: "Account Deleted",
+                icon: "success",
+                text: response.data.message,
+                showConfirmButton: false,
+              });
+            } else {
+              Swal.fire({
+                title: "Something went wrong",
+                icon: "question",
+                text: response.data.message,
+              });
+            }
+          } catch (err) {
+            console.log(err);
+            if (err.name == "Error") {
+              toast.error(err.message);
+            } else {
+              toast.error(err?.response?.data?.message);
+            }
+          }
+        }
+      });
+    }
+  };
   // eslint-disable-next-line react/prop-types
   const data = props?.dataUser?.data?.users;
   if (!data || data.length === 0) {
@@ -55,7 +152,7 @@ const RenderList = (props) => {
   } else {
     return (
       <>
-        <Modal
+        <Modal /* Modal 2 */
           open={open2}
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
@@ -153,10 +250,17 @@ const RenderList = (props) => {
                 </div>
               </div>
               <div className="flex flex-row-reverse gap-2 pt-4 my-2">
-                <button className="w-20 text-white btn btn-sm bg-indigo hover:bg-white hover:text-indigo hover:border-1 hover:border-indigo">
+                <button
+                  disabled={isDisabled}
+                  onClick={() => {
+                    handleEditSubmit(current.id);
+                  }}
+                  className="w-20 text-white btn btn-sm bg-indigo hover:bg-white hover:text-indigo hover:border-1 hover:border-indigo"
+                >
                   Save
                 </button>
                 <button
+                  disabled={isDisabled}
                   className="w-20 text-white bg-green-600 btn btn-sm hover:bg-white hover:text-green-600 hover:border-2 hover:border-green-600"
                   onClick={handleClose2}
                 >
@@ -166,7 +270,7 @@ const RenderList = (props) => {
             </Typography>
           </Box>
         </Modal>
-        <Modal
+        <Modal /* Modal 1 */
           open={open}
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
@@ -180,44 +284,34 @@ const RenderList = (props) => {
                 <form action="">
                   <div className="justify-between w-full pt-4 form-control md:flex md:flex-row md:items-center">
                     <span className="font-semibold label-text">NIK</span>
-                    <span className="w-2/4">
-                      238472634
-                      {/* {cookies.get("userData").user.email}{" "} */}
-                    </span>
+                    <span className="w-2/4">{userDetail.NIK}</span>
                   </div>
                   <div className="justify-between w-full pt-4 form-control md:flex md:flex-row md:items-center">
                     <span className="font-semibold label-text">Nama</span>
-                    <span className="w-2/4">
-                      westlee
-                      {/* {cookies.get("userData").user.email}{" "} */}
-                    </span>
+                    <span className="w-2/4">{userDetail.nama}</span>
                   </div>
                   <div className="justify-between w-full pt-4 form-control md:flex md:flex-row md:items-center">
                     <span className="font-semibold label-text">Email</span>
-                    <span className="w-2/4">
-                      gmail.comsdfsdfsdfsdfds
-                      {/* {cookies.get("userData").user.email}{" "} */}
-                    </span>
+                    <span className="w-2/4">{userDetail.email}</span>
                   </div>
                   <div className="justify-between w-full pt-4 form-control md:flex md:flex-row md:items-center">
                     <span className="font-semibold label-text">
                       Phone Number
                     </span>
-                    <span className="w-2/4">
-                      9238529485
-                      {/* {cookies.get("userData").user.nomor} */}
-                    </span>
+                    <span className="w-2/4">{userDetail.nomor}</span>
                   </div>
                 </form>
               </div>
               <div className="flex flex-row-reverse gap-2 mt-4">
                 <button
+                  disabled={isDisabled}
                   className="w-20 text-white bg-yellow-400 btn btn-sm hover:bg-white hover:text-yellow-400 hover:border-2 hover:border-yellow-400"
                   onClick={handleOpen2}
                 >
                   Edit
                 </button>
                 <button
+                  disabled={isDisabled}
                   className="w-20 text-white bg-indigo btn btn-sm hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo"
                   onClick={handleClose}
                 >
@@ -233,18 +327,24 @@ const RenderList = (props) => {
               <th>{el.NIK}</th>
               <td>{el.nama}</td>
               <td className="md:justify-center md:flex">
-                <span
+                <button
+                  disabled={isDisabled}
                   className="text-white btn bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo btn-xs"
-                  onClick={handleOpen}
+                  onClick={() => {
+                    handleInfoClick(el._id);
+                  }}
                 >
                   Info
-                </span>
-                <span
+                </button>
+                <button
+                  disabled={isDisabled}
                   className="text-white bg-red-600 btn hover:bg-white hover:text-red-600 hover:border-2 hover:border-red-600 btn-xs"
-                  onClick={() => navigate("")}
+                  onClick={() => {
+                    handleDeleteClick(el._id);
+                  }}
                 >
                   Delete
-                </span>
+                </button>
               </td>
             </tr>
           </>
@@ -255,6 +355,14 @@ const RenderList = (props) => {
 };
 
 const Account = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log(new Cookies().get("userLog"));
+    if (new Cookies().get("userData").user.role !== "admin") {
+      navigate("/");
+    }
+  });
   const [dataUser, setDataUser] = useState([]);
 
   const pending = async () => {

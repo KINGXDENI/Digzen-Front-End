@@ -11,6 +11,10 @@ import {
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { Cookies } from "react-cookie";
+import { domisiliAPI } from "../data/api-digzen";
+import Swal from "sweetalert2";
+import CustomError from "../util/customError";
+import { toast } from "react-toastify";
 
 const FormDomisili = () => {
   const cookies = new Cookies();
@@ -22,11 +26,64 @@ const FormDomisili = () => {
   });
 
   const navigate = useNavigate();
-  const [label, setLabel] = useState("");
+  const [data, setForm] = useState({});
 
-  const handleChange = (event) => {
-    setLabel(event.target.value);
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  const handleFormValue = (e, name) => {
+    const formDataCopy = { ...data };
+    formDataCopy[name] = e;
+    if (name == "kkDaerahAsalImage" || name == "ktpKeluargaPindahImage") {
+      formDataCopy[name] = e.target.files[0];
+    }
+    setForm(formDataCopy);
   };
+
+  const handleRegClick = async (e) => {
+    e.preventDefault();
+    setIsDisabled(true);
+    try {
+      if (data) {
+        const formData = new FormData();
+        for (let key in data) {
+          formData.append(key, data[key]);
+        }
+        const userId = cookies.get("userLog").userId;
+        const response = await domisiliAPI.post(`/${userId}`, formData, {
+          headers: {
+            "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
+          },
+        });
+        console.log(response);
+        if (response.status == 201) {
+          Swal.fire({
+            title: "Sukses",
+            icon: "success",
+            text: response.data.message,
+            showConfirmButton: false,
+            timer: 1000,
+          }).then(() => {
+            navigate("/statuspengajuan");
+          });
+        }
+      } else {
+        throw new CustomError(
+          "validationError",
+          "Form tidak lengkap mohon lengkapi form terlebih dahulu"
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      if (err.name == "validationError") {
+        toast.error(err.message);
+      } else {
+        toast.error(err?.response?.data?.message);
+      }
+    } finally {
+      setIsDisabled(false);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -43,7 +100,7 @@ const FormDomisili = () => {
           <span className="text-lg font-bold material-symbols-outlined ">
             arrow_back
           </span>
-          <p className="my-auto">back</p>
+          <p className="my-auto">Back</p>
         </div>
         <div className="relative justify-center p-5">
           <div className="w-11/12 mx-auto bg-white shadow-2xl rounded-xl ">
@@ -92,7 +149,7 @@ const FormDomisili = () => {
                     placeholder="xxxxxxxxxx"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "kk")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -103,7 +160,7 @@ const FormDomisili = () => {
                     placeholder="Nama Kepala Keluarga"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "kepalaKeluarga")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -114,7 +171,7 @@ const FormDomisili = () => {
                     placeholder="Alamat Baru"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "alamatBaru")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -125,7 +182,7 @@ const FormDomisili = () => {
                     placeholder="Provinsi"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "provinsi")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -136,7 +193,7 @@ const FormDomisili = () => {
                     placeholder="Kabupaten/Kota"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "kabupatenKota")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -147,7 +204,7 @@ const FormDomisili = () => {
                     placeholder="Kecamatan"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "kecamatan")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -158,7 +215,7 @@ const FormDomisili = () => {
                     placeholder="Kelurahan/Desa"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "kelurahanDesa")}
                   />
                 </div>
 
@@ -170,9 +227,8 @@ const FormDomisili = () => {
                     <Select
                       labelId="demo-simple-select-label"
                       id="demo-simple-select"
-                      value={label}
                       label="Klasifikasi Pindah"
-                      onChange={handleChange}
+                      onChange={(e) => handleFormValue(e, "klasifikasiPindah")}
                     >
                       <MenuItem value={"Dalam Satu Kelurahan"}>
                         Dalam Satu Kelurahan
@@ -205,7 +261,7 @@ const FormDomisili = () => {
                     placeholder="NIK Keluarga Yang Pindah"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "NIKPindah")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -216,7 +272,7 @@ const FormDomisili = () => {
                     placeholder="Alasan Pindah"
                     variant="outlined"
                     className="w-full"
-                    // onBlur={(e) => handleFormValueBlur(e, "NIK")}
+                    onBlur={(e) => handleFormValue(e, "alasanPindah")}
                   />
                 </div>
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
@@ -229,6 +285,7 @@ const FormDomisili = () => {
                     type="file"
                     accept="image/*"
                     placeholder="KK Dari Daerah Asal"
+                    onChange={(e) => handleFormValue(e, "kkDaerahAsalImage")}
                     className="w-full rounded-[5px] file-input file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
                 </div>
@@ -242,11 +299,18 @@ const FormDomisili = () => {
                     type="file"
                     accept="image/*"
                     placeholder="KTP Keluarga Yang Pindah"
+                    onChange={(e) =>
+                      handleFormValue(e, "ktpKeluargaPindahImage")
+                    }
                     className="w-full rounded-[5px] file-input file-input-bordered file-input-md max-w-screen md:max-w-md lg:max-w-2xl xl:max-w-4xl"
                   />
                 </div>
                 <div className="flex-row-reverse pt-4 pb-6 md:flex">
-                  <button className="text-white btn btn-block bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo md:w-1/6">
+                  <button
+                    onClick={handleRegClick}
+                    disabled={isDisabled}
+                    className="text-white btn btn-block bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo md:w-1/6"
+                  >
                     Submit
                   </button>
                 </div>
