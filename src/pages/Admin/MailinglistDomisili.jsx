@@ -24,12 +24,16 @@ const RenderList = (props) => {
           <>
             <tr key={idx}>
               <th>{idx + 1}</th>
-              <td>{el.nama}</td>
-              <td>KTP</td>
+              <td>{el.kepalaKeluarga}</td>
+              <td>Domisili</td>
               <td>
                 <span
                   className="text-white btn bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo btn-xs"
-                  onClick={() => navigate("/verifikasiktp", { state: el.NIK })}
+                  onClick={() =>
+                    navigate("/verifikasidomisili", {
+                      state: { nik: el.NIKPindah },
+                    })
+                  }
                 >
                   Verify
                 </span>
@@ -42,7 +46,7 @@ const RenderList = (props) => {
   }
 };
 
-const Mailinglist = () => {
+const MailinglistDomisili = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,7 +59,7 @@ const Mailinglist = () => {
 
   const pending = async () => {
     try {
-      const response = await API.get("ktp");
+      const response = await API.get("domisili");
       setDataPengajuan(response);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -98,12 +102,13 @@ const Mailinglist = () => {
             <div className="">
               <div
                 className="text-white btn btn-sm bg-indigo hover:bg-white hover:text-indigo hover:border-2 hover:border-indigo"
-                onClick={() => navigate("/mailinglistdomisili")}
+                onClick={() => navigate("/mailinglist")}
               >
-                Mailing List Domisili
+                Mailing List KTP
               </div>
             </div>
           </div>
+
           <div className="mx-2 mb-2 overflow-x-auto bg-white border rounded border-base-300">
             <table className="table table-zebra">
               {/* head */}
@@ -127,4 +132,4 @@ const Mailinglist = () => {
     </>
   );
 };
-export default Mailinglist;
+export default MailinglistDomisili;

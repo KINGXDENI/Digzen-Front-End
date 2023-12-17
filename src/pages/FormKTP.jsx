@@ -193,7 +193,7 @@ const FormKTP = () => {
             <hr className="bg-indigo text-black p-[1px] mx-10 " />
             <div className="px-10">
               {/*  */}
-              <form action="">
+              <form action="" id="form">
                 <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
                   <TextField
                     id="outlined-number"
@@ -205,7 +205,7 @@ const FormKTP = () => {
                       pattern: "[0-9]*",
                     }}
                     placeholder="xxxxxxxxxx"
-                    className="w-full"
+                    className="w-full nikEl"
                     onBlur={(e) => handleFormValue(e.target.value, "NIK")}
                   />
                 </div>
@@ -311,6 +311,28 @@ const FormKTP = () => {
                     variant="outlined"
                     className="w-full"
                     onBlur={(e) => handleFormValue(e.target.value, "alamat")}
+                  />
+                </div>
+                <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
+                  <TextField
+                    id="outlined-basic"
+                    label="Provinsi"
+                    type="Text"
+                    placeholder="Provinsi"
+                    variant="outlined"
+                    className="w-full"
+                    onBlur={(e) => handleFormValue(e.target.value, "provinsi")}
+                  />
+                </div>
+                <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
+                  <TextField
+                    id="outlined-basic"
+                    label="Kabupaten/Kota"
+                    type="Text"
+                    placeholder="Kabupaten/Kota"
+                    variant="outlined"
+                    className="w-full"
+                    onBlur={(e) => handleFormValue(e.target.value, "kabupaten")}
                   />
                 </div>
                 <div className="flex flex-col justify-between w-full gap-2 pt-4 form-control md:flex md:flex-row">

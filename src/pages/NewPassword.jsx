@@ -1,9 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ele from "../assets/images/ele.png";
-import { logAPI, API } from "../data/api-digzen";
+import { API, resendOTP } from "../data/api-digzen";
 import { useEffect, useState } from "react";
-import { useCookies, Cookies } from "react-cookie";
-import { jwtDecode } from "jwt-decode";
+import { Cookies } from "react-cookie";
 import { ToastContainer, toast } from "react-toastify";
 import CustomError from "../util/customError";
 import Swal from "sweetalert2";
@@ -11,12 +10,15 @@ import TextField from "@mui/material/TextField";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 
 const NewPassword = () => {
+  const email = useLocation()?.state?.email;
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
   const [isDisabled, setIsDisabled] = useState(false);
   const [showPassword, setShowPassword] = useState("password");
-  // eslint-disable-next-line no-unused-vars
-  const [cookies, setCookie] = useCookies(["userLog"]);
+  const [timer, setTimer] = useState(localStorage.getItem("lastTimerValue")); // 5 minutes in seconds
+  const [resendDisabled, setResendDisabled] = useState(
+    localStorage.getItem("lastTimerValue") > 0 ? true : false
+  );
   const handleFormValueBlur = (e, name) => {
     const formDataCopy = { ...formData };
     formDataCopy[name] = e.target.value;
@@ -29,41 +31,48 @@ const NewPassword = () => {
     );
   };
 
+  const handleResendClick = async (e) => {
+    e.preventDefault();
+    if (email && !resendDisabled) {
+      const response = await resendOTP.post("", JSON.stringify({ email }));
+
+      if (response.status === 200) {
+        setTimer(300); // Reset timer to 5 minutes
+        setResendDisabled(true); // Disable resend button
+        Swal.fire({
+          title: "Check Email",
+          icon: "success",
+          text: response.data.message,
+        });
+      }
+    }
+  };
+
   const handleLogClick = async (e) => {
     e.preventDefault();
     setIsDisabled(true);
-    const { password } = formData;
+    const { otp, newPassword } = formData;
     try {
-      if (password) {
-        const response = await logAPI.post("", JSON.stringify(formData));
+      if (email && otp && newPassword) {
+        const response = await API.post(
+          "users/change-password",
+          JSON.stringify({ email, otp, newPassword })
+        );
 
         if (response.status == 200) {
-          const dec = jwtDecode(response.data.token);
-          const roleResponse = await API.get(`users/${dec.userId}`);
-          const { role } = roleResponse.data.user;
-          setCookie("userLog", dec, {
-            expires: new Date(Date.now() + dec.exp),
-          });
-          setCookie("userData", roleResponse.data, {
-            expires: new Date(Date.now() + dec.exp),
-          });
           Swal.fire({
             title: "Sukses",
             icon: "success",
             showConfirmButton: false,
             timer: 1000,
           }).then(() => {
-            if (role == "admin") {
-              navigate("/admin");
-            } else {
-              navigate("/");
-            }
+            navigate("/login");
           });
         }
       } else {
         throw new CustomError(
           "validationError",
-          "Minimal Password 8 Character"
+          "Minimal Password 8 Character atau OTP tidak diisi"
         );
       }
     } catch (err) {
@@ -82,8 +91,30 @@ const NewPassword = () => {
     if (new Cookies().get("userData")) {
       navigate("/");
     }
+
+    if (!email) {
+      navigate("/login");
+    }
   });
 
+  useEffect(() => {
+    let timerId;
+
+    if (timer > 0) {
+      timerId = setInterval(() => {
+        setTimer((prevTimer) => Math.max(0, prevTimer - 1));
+      }, 1000);
+    } else {
+      setResendDisabled(false); // Enable resend button when the timer reaches 0
+    }
+
+    return () => clearInterval(timerId);
+  }, [timer]);
+
+  useEffect(() => {
+    // Save the timer value to localStorage
+    localStorage.setItem("lastTimerValue", timer);
+  }, [timer]);
   return (
     <>
       <ToastContainer />
@@ -105,13 +136,23 @@ const NewPassword = () => {
               <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
                 <TextField
                   id="outlined-basic"
-                  label="New Password"
-                  type={showPassword}
-                  inputMode="text"
+                  label="OTP"
+                  type="text"
                   inputProps={{ minLength: 8 }}
                   variant="outlined"
                   className="w-full"
-                  onBlur={(e) => handleFormValueBlur(e, "password")}
+                  onBlur={(e) => handleFormValueBlur(e, "otp")}
+                />
+              </div>
+              <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
+                <TextField
+                  id="outlined-basic"
+                  label="New Password"
+                  type={showPassword}
+                  inputProps={{ minLength: 4 }}
+                  variant="outlined"
+                  className="w-full"
+                  onBlur={(e) => handleFormValueBlur(e, "newPassword")}
                 />
                 <div className="relative ">
                   <button
@@ -132,6 +173,30 @@ const NewPassword = () => {
                 </div>
               </div>
               <div className="pt-4 pb-6">
+                <p>
+                  <span className={resendDisabled ? "hidden" : ""}>
+                    Didn't recieve your code?
+                  </span>
+                  <span className={resendDisabled ? "" : "hidden"}>
+                    You can re-send your OTP in:
+                  </span>
+
+                  <span
+                    className={
+                      !resendDisabled
+                        ? "text-blue-600 visited:text-purple-600 cursor-pointer"
+                        : "hidden"
+                    }
+                    onClick={handleResendClick}
+                  >
+                    {" "}
+                    Resend Code!
+                  </span>
+                  <span className={resendDisabled ? "" : "hidden"}>
+                    {" "}
+                    {formatTime(timer)}
+                  </span>
+                </p>
                 <button
                   onClick={handleLogClick}
                   disabled={isDisabled}
@@ -153,4 +218,13 @@ const NewPassword = () => {
   );
 };
 
+// Helper function to format time
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  const formattedTime = `${String(minutes).padStart(2, "0")}:${String(
+    remainingSeconds
+  ).padStart(2, "0")}`;
+  return formattedTime;
+};
 export default NewPassword;

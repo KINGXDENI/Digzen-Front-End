@@ -6,11 +6,14 @@ import { API } from "../data/api-digzen";
 
 const RenderList = (props) => {
   // eslint-disable-next-line react/prop-types
-  const data = props?.dataPengajuan?.data?.data;
-  if (!data || data.length === 0) {
+  const totalKtp = props?.dataPengajuan?.ktp?.data?.data?.length;
+  const totalDom = props?.dataPengajuan?.dom?.data?.data?.length;
+
+  if (!totalKtp || !totalDom || totalKtp == 0 || totalDom == 0) {
     return 0;
   } else {
-    return data.length;
+    const total = parseInt(totalKtp) + parseInt(totalDom);
+    return total;
   }
 };
 
@@ -19,8 +22,12 @@ const NavbarADM = () => {
 
   const pending = async () => {
     try {
-      const response = await API.get("ktp");
-      setDataPengajuan(response);
+      const responsektp = await API.get("ktp");
+      const responsedom = await API.get("domisili");
+      setDataPengajuan({
+        ktp: responsektp,
+        dom: responsedom,
+      });
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -171,10 +178,14 @@ const NavbarADM = () => {
                       <div className="avatar placeholder">
                         <div className="w-12 rounded-full bg-neutral text-neutral-content">
                           <img
-                            src={`https://ui-avatars.com/api/?name=${
-                              cookies.get("userData").user.nama
-                            }`}
-                            className="w-[8rem] border-2 border-black rounded-full"
+                            src={
+                              cookies.get("userData").user.userImage
+                                ? cookies.get("userData").user.userImage
+                                : `https://ui-avatars.com/api/?name=${
+                                    cookies.get("userData").user.nama
+                                  }`
+                            }
+                            className="bg-white w-[8rem] border-2 border-black rounded-full"
                           />
                         </div>
                       </div>
@@ -207,6 +218,9 @@ const NavbarADM = () => {
                 <ul className="w-56 menu bg-base-200 rounded-box">
                   <li>
                     <a onClick={() => navigate("/admin")}>Beranda</a>
+                  </li>
+                  <li>
+                    <a onClick={() => navigate("/")}>Beranda User</a>
                   </li>
                   <li>
                     <a onClick={() => navigate("/mailinglist")}>

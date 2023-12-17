@@ -193,6 +193,7 @@ const RenderList = (props) => {
                 <TextField
                   id="outlined-basic"
                   label="Email"
+                  inputProps={{ style: { textTransform: "lowercase" } }}
                   variant="outlined"
                   className="w-full"
                   placeholder="contoh@contoh.com"
@@ -204,17 +205,7 @@ const RenderList = (props) => {
                   id="outlined-basic"
                   label="Phone Number"
                   type="number"
-                  placeholder="08xxxx"
-                  variant="outlined"
-                  className="w-full"
-                  onBlur={(e) => handleFormValue(e, "nomor")}
-                />
-              </div>
-              <div className="justify-between w-full pt-4 form-control md:flex md:flex-row">
-                <TextField
-                  id="outlined-basic"
-                  label="Phone Number"
-                  type="number"
+                  inputProps={{ minLength: 10 }}
                   placeholder="08xxxx"
                   variant="outlined"
                   className="w-full"

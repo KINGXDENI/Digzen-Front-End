@@ -144,6 +144,7 @@ const Register = () => {
                 <TextField
                   id="outlined-basic"
                   label="Email"
+                  inputProps={{ style: { textTransform: "lowercase" } }}
                   variant="outlined"
                   className="w-full"
                   placeholder="contoh@contoh.com"
@@ -155,6 +156,7 @@ const Register = () => {
                   id="outlined-basic"
                   label="Phone Number"
                   type="number"
+                  inputProps={{ minLength: 10 }}
                   placeholder="08xxxx"
                   variant="outlined"
                   className="w-full"
@@ -183,7 +185,6 @@ const Register = () => {
                   id="outlined-basic"
                   label="Password"
                   type={showPassword}
-                  inputMode="numeric"
                   inputProps={{ minLength: 8 }}
                   variant="outlined"
                   className="w-full"

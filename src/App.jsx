@@ -21,15 +21,19 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import ForgotPassword from "./pages/ForgotPassword";
 import NewPassword from "./pages/NewPassword";
+import ScrollToTopOnPageChange from "./util/ScrollToUp";
+import MailinglistDomisili from "./pages/Admin/MailinglistDomisili";
 AOS.init();
 
 const App = () => {
   return (
     <Router>
+      <ScrollToTopOnPageChange />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/admin" element={<BerandaADM />} />
         <Route path="/mailinglist" element={<Mailinglist />} />
+        <Route path="/mailinglistdomisili" element={<MailinglistDomisili />} />
         <Route path="/verifikasiktp" element={<VerifikasiKTP />} />
         <Route path="/verifikasidomisili" element={<VerifikasiDomisili />} />
         <Route path="/account" element={<Account />} />

@@ -117,6 +117,7 @@ const Login = () => {
                 <TextField
                   id="outlined-basic"
                   label="Email"
+                  inputProps={{ style: { textTransform: "lowercase" } }}
                   variant="outlined"
                   className="w-full animate__animated animate__bounceIn"
                   onChange={(e) => handleFormValue(e, "email")}
@@ -128,6 +129,7 @@ const Login = () => {
                     id="outlined-basic"
                     label="Password"
                     type={showPassword}
+                    inputProps={{ minLength: 8 }}
                     variant="outlined"
                     className="w-full"
                     onChange={(e) => handleFormValue(e, "password")}
@@ -152,7 +154,12 @@ const Login = () => {
                 </div>
               </div>
               <div className="flex flex-row-reverse pt-2">
-                <a className="link ">Lupa Password</a>
+                <a
+                  onClick={() => navigate("/forgotpassword")}
+                  className="link "
+                >
+                  Lupa Password
+                </a>
               </div>
               <div className="pt-4 pb-6">
                 <button
