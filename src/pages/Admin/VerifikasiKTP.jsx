@@ -30,12 +30,18 @@ const RenderList = (props) => {
   } else {
     const handleVerifSubmit = async (val) => {
       let verified = val;
+      let reason;
+      if (verified == "reject") {
+        reason = "Maaf pengajuan Anda ditolak.";
+      } else if (verified == "accept") {
+        reason = "Selamat pengajuan Anda telah diterima.";
+      }
 
       setIsDisabled(true);
       try {
         const response = await API.put(
           `/ktp/${data._id}`,
-          { verified, reason: "KTP Terverifikasi" },
+          { verified, reason },
           {
             headers: {
               "Content-Type": "application/json",
@@ -277,7 +283,9 @@ const RenderList = (props) => {
                     </button>
                     <button
                       disabled={buttonDisable}
-                      onClick={() => handleVerifSubmit("reject")}
+                      onClick={() => {
+                        handleVerifSubmit("reject");
+                      }}
                       className="text-white bg-red-600 btn btn-block btn-error hover:bg-white hover:text-red-600 hover:border-2 hover:border-red-600 md:w-1/6"
                     >
                       Reject
@@ -301,7 +309,7 @@ const VerifikasiKTP = () => {
 
   const pending = async () => {
     try {
-      const response = await API.get(`ktp/${NIK}`);
+      const response = await API.get(`ktp/nik/${NIK}`);
       setDataPengajuan(response);
     } catch (error) {
       console.error("Error fetching data:", error);

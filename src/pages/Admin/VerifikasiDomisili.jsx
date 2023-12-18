@@ -7,6 +7,7 @@ import { Cookies } from "react-cookie";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { API } from "../../data/api-digzen";
+
 const RenderList = (props) => {
   const navigate = useNavigate();
 
@@ -28,12 +29,18 @@ const RenderList = (props) => {
   } else {
     const handleVerifSubmit = async (val) => {
       let verified = val;
+      let reason;
+      if (verified == "reject") {
+        reason = "Maaf pengajuan Anda ditolak.";
+      } else if (verified == "accept") {
+        reason = "Selamat pengajuan Anda telah diterima.";
+      }
 
       setIsDisabled(true);
       try {
         const response = await API.put(
           `/domisili/${data._id}`,
-          { verified, reason: "Domisili Terverifikasi" },
+          { verified, reason },
           {
             headers: {
               "Content-Type": "application/json",
@@ -43,7 +50,7 @@ const RenderList = (props) => {
 
         if (response.status == 200) {
           Swal.fire({
-            title: "Accepted",
+            title: val,
             icon: "success",
             showConfirmButton: false,
             timer: 1000,
@@ -197,7 +204,7 @@ const RenderList = (props) => {
                     <button
                       disabled={buttonDisable}
                       onClick={() => handleVerifSubmit("reject")}
-                      className="mt-2 text-white bg-red-600 md:mt-0 btn btn-block btn-error hover:bg-white hover:text-red-600 hover:border-2 hover:border-red-600 md:w-1/6"
+                      className="text-white bg-red-600 btn btn-block btn-error hover:bg-white hover:text-red-600 hover:border-2 hover:border-red-600 md:w-1/6"
                     >
                       Reject
                     </button>
@@ -219,7 +226,7 @@ const VerifikasiDomisili = () => {
   const [dataPengajuan, setDataPengajuan] = useState([]);
   const pending = async () => {
     try {
-      const response = await API.get(`domisili/${NIK}`);
+      const response = await API.get(`domisili/nik/${NIK}`);
       setDataPengajuan(response);
     } catch (error) {
       console.error("Error fetching data:", error);
